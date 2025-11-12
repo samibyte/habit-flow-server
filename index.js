@@ -35,6 +35,29 @@ const verifyAccessToken = async (req, res, next) => {
   }
 };
 
+function calculateStreak(completionHistory) {
+  if (!completionHistory || completionHistory.length === 0) return 0;
+
+  // Sort dates in descending order
+  const sortedDates = completionHistory
+    .map((date) => new Date(date))
+    .sort((a, b) => b - a);
+
+  let streak = 1;
+  for (let i = 1; i < sortedDates.length; i++) {
+    const diffTime = sortedDates[i - 1] - sortedDates[i];
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      streak++;
+    } else if (diffDays > 1) {
+      break;
+    }
+  }
+
+  return streak;
+}
+
 app.get("/", async (req, res) => {
   res.send("server running fine ;)");
 });
@@ -101,6 +124,69 @@ async function run() {
       const result = await habitsColl.insertOne(newHabit);
       res.send(result);
     });
+
+    //Complete Habit
+    app.post(
+      "/api/v1/habits/:id/complete",
+      verifyAccessToken,
+      async (req, res) => {
+        const { id } = req.params;
+
+        try {
+          const filter = { _id: new ObjectId(id) };
+          const habit = await habitsColl.findOne(filter);
+
+          if (!habit) {
+            return res.status(404).json({ message: "Habit not found" });
+          }
+
+          const today = new Date();
+          const todayISO = today.toISOString();
+
+          // Avoid adding duplicate for the same day
+          const lastCompletion =
+            habit.completionHistory?.length > 0
+              ? new Date(
+                  habit.completionHistory[habit.completionHistory.length - 1]
+                )
+              : null;
+
+          if (
+            lastCompletion &&
+            lastCompletion.toDateString() === today.toDateString()
+          ) {
+            return res
+              .status(400)
+              .json({ message: "Habit already completed today" });
+          }
+
+          // Push new completion
+          const updatedCompletionHistory = habit.completionHistory || [];
+          updatedCompletionHistory.push(todayISO);
+
+          // Calculate new streak
+          const newStreak = calculateStreak(updatedCompletionHistory);
+
+          const update = {
+            $set: {
+              completionHistory: updatedCompletionHistory,
+              streak: newStreak,
+            },
+          };
+
+          await habitsColl.updateOne(filter, update);
+
+          res.json({
+            message: "Habit marked as completed",
+            streak: newStreak,
+            completionHistory: updatedCompletionHistory,
+          });
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ message: "Internal server error" });
+        }
+      }
+    );
 
     //Update habit
     app.patch("/api/v1/habits/:id", verifyAccessToken, async (req, res) => {
