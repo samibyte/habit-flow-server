@@ -102,6 +102,24 @@ async function run() {
       res.send(result);
     });
 
+    //Update habit
+    app.patch("/api/v1/habits/:id", verifyAccessToken, async (req, res) => {
+      const { id } = req.params;
+      const { title, description, category, reminderTime, image } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $set: {
+          title,
+          description,
+          category,
+          reminderTime,
+          image,
+        },
+      };
+      const result = await habitsColl.updateOne(filter, update);
+      res.send(result);
+    });
+
     //Delete habit
     app.delete("/api/v1/habits/:id", verifyAccessToken, async (req, res) => {
       const { id } = req.params;
