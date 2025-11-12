@@ -90,7 +90,7 @@ async function run() {
         reminderTime: 0,
         imageUrl: 0,
       };
-      const cursor = habitsColl.find().project(projectFields);
+      const cursor = habitsColl.find({ isPublic: true }).project(projectFields);
       const result = await cursor.toArray();
       res.json(result);
     });
@@ -105,7 +105,7 @@ async function run() {
         imageUrl: 0,
       };
       const cursor = habitsColl
-        .find()
+        .find({ isPublic: true })
         .project(projectFields)
         .sort({ createdAt: -1 })
         .limit(6);
@@ -122,7 +122,7 @@ async function run() {
     });
 
     // Read my habits
-    app.get("/api/v1/my-habits", async (req, res) => {
+    app.get("/api/v1/my-habits", verifyAccessToken, async (req, res) => {
       const { uid } = req.query;
       if (uid) {
         const filter = { "creator.uid": uid };
