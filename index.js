@@ -121,6 +121,17 @@ async function run() {
       res.json(result);
     });
 
+    // Read my habits
+    app.get("/api/v1/my-habits", async (req, res) => {
+      const { uid } = req.query;
+      if (uid) {
+        const filter = { "creator.uid": uid };
+        const cursor = habitsColl.find(filter);
+        const result = await cursor.toArray();
+        res.json(result);
+      }
+    });
+
     //Create habit
     app.post("/api/v1/habits", verifyAccessToken, async (req, res) => {
       const newHabit = req.body;
