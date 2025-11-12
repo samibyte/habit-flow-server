@@ -1,0 +1,30 @@
+{
+  "name": "habit-flow-client",
+  "version": "1.0.0",
+  "description": "A modern habit tracker app.",
+  "homepage": "https://github.com/samibyte/habit-flow-client#readme",
+  "bugs": {
+    "url": "https://github.com/samibyte/habit-flow-client/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samibyte/habit-flow-client.git"
+  },
+  "license": "MIT",
+  "author": "samibyte",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file=.env index.js",
+    "dev": "nodemon --env-file=.env index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.6.0",
+    "mongodb": "^7.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
