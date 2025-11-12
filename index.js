@@ -379,7 +379,7 @@ async function run() {
           isPublic: Boolean(isPublic),
           reminderTime: reminderTime || null,
           frequency: frequency || null,
-          difficulty: reminderTime || null,
+          difficulty: difficulty || null,
           goal: goal || null,
           imageUrl: imageUrl || null,
           creator: {
