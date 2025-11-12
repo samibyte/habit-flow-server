@@ -95,10 +95,18 @@ async function run() {
     });
 
     //Create habit
-    app.post("/api/v1/habits", async (req, res) => {
+    app.post("/api/v1/habits", verifyAccessToken, async (req, res) => {
       const newHabit = req.body;
       newHabit.createdAt = new Date();
       const result = await habitsColl.insertOne(newHabit);
+      res.send(result);
+    });
+
+    //Delete habit
+    app.delete("/api/v1/habits/:id", verifyAccessToken, async (req, res) => {
+      const { id } = req.params;
+      const filter = { _id: new ObjectId(id) };
+      const result = await habitsColl.deleteOne(filter);
       res.send(result);
     });
 
