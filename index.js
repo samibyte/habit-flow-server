@@ -7,9 +7,8 @@ import fs from "fs";
 const app = express();
 const port = process.env.PORT || 3000;
 
-const serviceAccount = fs.readFileSync(
-  "/habit-flows-here-firebase-adminsdk.json",
-  "utf8"
+const serviceAccount = JSON.parse(
+  fs.readFileSync("./firebaseAdminKey.json", "utf8")
 );
 
 admin.initializeApp({
@@ -57,6 +56,35 @@ async function run() {
 
     const db = client.db("habit-flow-db");
     const habitsColl = db.collection("habits");
+
+    // habits colleciton api endpoints
+    // Read Public habits
+    app.get("/api/v1/habits", async (req, res) => {
+      const projectFields = {
+        completionHistory: 0,
+        "creator.email": 0,
+        "creator.uid": 0,
+        reminderTime: 0,
+        imageUrl: 0,
+      };
+      const cursor = habitsColl.find().project(projectFields);
+      const result = await cursor.toArray();
+      res.json(result);
+    });
+
+    // Read Latest Public habits
+    app.get("/api/v1/latest-habits", async (req, res) => {
+      const projectFields = {
+        completionHistory: 0,
+        "creator.email": 0,
+        "creator.uid": 0,
+        reminderTime: 0,
+        imageUrl: 0,
+      };
+      const cursor = habitsColl.find().project(projectFields);
+      const result = await cursor.toArray();
+      res.json(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
