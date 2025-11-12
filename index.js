@@ -104,7 +104,11 @@ async function run() {
         reminderTime: 0,
         imageUrl: 0,
       };
-      const cursor = habitsColl.find().project(projectFields);
+      const cursor = habitsColl
+        .find()
+        .project(projectFields)
+        .sort({ createdAt: -1 })
+        .limit(6);
       const result = await cursor.toArray();
       res.json(result);
     });
