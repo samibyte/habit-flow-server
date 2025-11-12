@@ -86,6 +86,14 @@ async function run() {
       res.json(result);
     });
 
+    //Read specific habit
+    app.get("/api/v1/habits/:id", verifyAccessToken, async (req, res) => {
+      const { id } = req.params;
+      const filter = { _id: new ObjectId(id) };
+      const result = await habitsColl.findOne(filter);
+      res.json(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
