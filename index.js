@@ -35,23 +35,36 @@ const verifyAccessToken = async (req, res, next) => {
   }
 };
 
-function calculateStreak(completionHistory) {
+function calculateDailyStreak(completionHistory) {
   if (!completionHistory || completionHistory.length === 0) return 0;
 
-  // Sort dates in descending order
-  const sortedDates = completionHistory
-    .map((date) => new Date(date))
-    .sort((a, b) => b - a);
+  const dates = completionHistory.map((dateStr) => {
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
-  let streak = 1;
-  for (let i = 1; i < sortedDates.length; i++) {
-    const diffTime = sortedDates[i - 1] - sortedDates[i];
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const sortedDates = dates.sort((a, b) => b - a);
 
-    if (diffDays === 1) {
+  let streak = 0;
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let currentDate = today;
+
+  for (const date of sortedDates) {
+    if (date.getTime() === currentDate.getTime()) {
       streak++;
-    } else if (diffDays > 1) {
-      break;
+
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else if (date < currentDate) {
+      const diff = (currentDate - date) / (1000 * 60 * 60 * 24);
+      if (diff === 1) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else if (diff > 1) {
+        break;
+      }
     }
   }
 
@@ -156,45 +169,36 @@ async function run() {
           }
 
           const today = new Date();
+          today.setHours(0, 0, 0, 0);
           const todayISO = today.toISOString();
 
-          // Avoid adding duplicate for the same day
-          const lastCompletion =
-            habit.completionHistory?.length > 0
-              ? new Date(
-                  habit.completionHistory[habit.completionHistory.length - 1]
-                )
-              : null;
+          const updateResult = await habitsColl.findOneAndUpdate(
+            { _id: new ObjectId(id), completionHistory: { $ne: todayISO } },
+            { $push: { completionHistory: todayISO } },
+            { returnDocument: "after" }
+          );
 
-          if (
-            lastCompletion &&
-            lastCompletion.toDateString() === today.toDateString()
-          ) {
+          if (!updateResult.value) {
             return res
               .status(400)
               .json({ message: "Habit already completed today" });
           }
 
-          // Push new completion
-          const updatedCompletionHistory = habit.completionHistory || [];
-          updatedCompletionHistory.push(todayISO);
+          const updatedHabit = updateResult.value;
 
-          // Calculate new streak
-          const newStreak = calculateStreak(updatedCompletionHistory);
+          const newStreak = calculateDailyStreak(
+            updatedHabit.completionHistory
+          );
 
-          const update = {
-            $set: {
-              completionHistory: updatedCompletionHistory,
-              streak: newStreak,
-            },
-          };
-
-          await habitsColl.updateOne(filter, update);
+          await habitsColl.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { streak: newStreak } }
+          );
 
           res.json({
             message: "Habit marked as completed",
             streak: newStreak,
-            completionHistory: updatedCompletionHistory,
+            completionHistory: updatedHabit.completionHistory,
           });
         } catch (error) {
           console.error(error);
