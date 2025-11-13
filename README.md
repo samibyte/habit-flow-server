@@ -88,7 +88,7 @@ Returns server status and local date.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/habit-flow-server.git
+git clone https://github.com/samibyte/habit-flow-server.git
 cd habit-flow-server
 ```
 
@@ -122,7 +122,7 @@ npm start     # For production
 - **Firebase Admin SDK** – Authentication & token verification
 - **Cors & Express JSON Middleware** – For secure API access and JSON parsing
 - **Intl DateTimeFormat** – Timezone-aware date formatting
-- **Vercel** – Deployment (recommended)
+- **Vercel** – Deployment
 
 ---
 
