@@ -436,6 +436,13 @@ async function run() {
           //   });
           // }
 
+          if (!habit.isPublic && habit.creator?.uid !== req.token_uid) {
+            return res.status(403).json({
+              message:
+                "Access denied - You can only complete your own private habits",
+            });
+          }
+
           const completionHistory = Array.isArray(habit.completionHistory)
             ? habit.completionHistory
             : [];
