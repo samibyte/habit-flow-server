@@ -13,8 +13,11 @@ app.use(express.json());
 
 let serviceAccount;
 if (process.env.FIREBASE_ADMIN_KEY) {
-  serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_KEY);
-  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+  const decoded = Buffer.from(
+    process.env.FIREBASE_ADMIN_KEY,
+    "base64"
+  ).toString("utf8");
+  serviceAccount = JSON.parse(decoded);
 } else {
   serviceAccount = JSON.parse(
     fs.readFileSync("./firebaseAdminKey.json", "utf8")
