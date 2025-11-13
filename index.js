@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import { MongoClient, ObjectId, ServerApiVersion } from "mongodb";
 import admin from "firebase-admin";
-import fs from "fs";
+import serviceAccount from "./firebaseAdminKey.json" with { type: "json" };
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,18 +11,6 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-let serviceAccount;
-if (process.env.FIREBASE_ADMIN_KEY) {
-  const decoded = Buffer.from(
-    process.env.FIREBASE_ADMIN_KEY,
-    "base64"
-  ).toString("utf8");
-  serviceAccount = JSON.parse(decoded);
-} else {
-  serviceAccount = JSON.parse(
-    fs.readFileSync("./firebaseAdminKey.json", "utf8")
-  );
-}
 
 if (!admin.apps.length) {
   admin.initializeApp({
