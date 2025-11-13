@@ -7,40 +7,25 @@ import fs from "fs";
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Users timezone
-const USER_TIMEZONE = "Asia/Dhaka";
-
-if (!process.env.DB_URI) {
-  console.error(" ERROR: DB_URI environment variable is not set");
-  process.exit(1);
-}
-
-// Initialize Firebase Admin
-try {
-  const decoded = Buffer.from(
-    process.env.FIREBASE_SERVICE_KEY,
-    "base64"
-  ).toString("utf8");
-  const serviceAccount = JSON.parse(decoded);
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-  console.log(" Firebase Admin initialized successfully");
-} catch (error) {
-  console.error(" Failed to initialize Firebase Admin:", error.message);
-  process.exit(1);
-}
-
 //middlewares
 app.use(cors());
 app.use(express.json());
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+let serviceAccount;
+if (process.env.FIREBASE_ADMIN_KEY) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_KEY);
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+} else {
+  serviceAccount = JSON.parse(
+    fs.readFileSync("./firebaseAdminKey.json", "utf8")
+  );
+}
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
 
 // Firebase access token middleware
 const verifyAccessToken = async (req, res, next) => {
@@ -72,6 +57,19 @@ const verifyAccessToken = async (req, res, next) => {
     });
   }
 };
+
+const uri = process.env.DB_URI;
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+
+const USER_TIMEZONE = "Asia/Dhaka";
 
 function getLocalDateString(date = new Date(), timezone = USER_TIMEZONE) {
   try {
@@ -187,31 +185,9 @@ function validateHabitInput(data, isUpdate = false) {
   return errors;
 }
 
-// Health check
-app.get("/", async (req, res) => {
-  const now = new Date();
-  res.json({
-    status: "ok",
-    message: "Habit Flow API is running fine ;)",
-    timestamp: now.toISOString(),
-    localDate: getLocalDateString(now),
-    timezone: USER_TIMEZONE,
-  });
-});
-
-const uri = process.env.DB_URI;
-
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log(" Successfully connected to MongoDB!");
 
     const db = client.db("habit-flow-db");
@@ -227,8 +203,8 @@ async function run() {
       console.warn("  Index creation warning:", err.message);
     }
 
-    console.log(` Server timezone: ${USER_TIMEZONE}`);
-    console.log(` Current local date: ${getLocalDateString()}`);
+    // console.log(` Server timezone: ${USER_TIMEZONE}`);
+    // console.log(` Current local date: ${getLocalDateString()}`);
 
     // Read public habits
     app.get("/api/v1/habits", async (req, res) => {
@@ -469,7 +445,7 @@ async function run() {
                 lastCompletedAt: new Date(),
               },
             },
-            { returnOriginal: false }
+            { returnDocument: "after" }
           );
 
           let updatedHabit = updateResult.value;
@@ -543,9 +519,9 @@ async function run() {
         if (category !== undefined) updateFields.category = category;
         if (reminderTime !== undefined)
           updateFields.reminderTime = reminderTime;
-        if (frequency !== undefined) updateFields.frequency = reminderTime;
-        if (difficulty !== undefined) updateFields.difficulty = reminderTime;
-        if (goal !== undefined) updateFields.goal = reminderTime;
+        if (frequency !== undefined) updateFields.frequency = frequency;
+        if (difficulty !== undefined) updateFields.difficulty = difficulty;
+        if (goal !== undefined) updateFields.goal = goal;
         if (imageUrl !== undefined) updateFields.imageUrl = imageUrl;
         if (isPublic !== undefined) updateFields.isPublic = Boolean(isPublic);
 
@@ -557,7 +533,7 @@ async function run() {
 
         const update = { $set: updateFields };
         const result = await habitsColl.findOneAndUpdate(filter, update, {
-          returnOriginal: false,
+          returnDocument: "after",
         });
 
         let updatedHabit = result.value;
@@ -616,27 +592,25 @@ async function run() {
       }
     });
 
-    // Global error handler
-    app.use((err, req, res, next) => {
-      console.error("Unhandled error:", err);
-      res.status(500).json({
-        message: "Internal server error",
-        error: process.env.NODE_ENV === "development" ? err.message : undefined,
-      });
-    });
-
-    // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(" Pinged deployment. Successfully connected to MongoDB!");
-  } catch (err) {
-    console.error(" Failed to connect to MongoDB:", err);
-    process.exit(1);
+  } finally {
+    // Ensures that the client will close when you finish/error
+    // await client.close();
   }
 }
 
-run().catch((err) => {
-  console.error(" Fatal error:", err);
-  process.exit(1);
+run().catch(console.dir);
+
+// Health check
+app.get("/", async (req, res) => {
+  const now = new Date();
+  res.json({
+    status: "ok",
+    message: "Habit Flow API is running fine ;)",
+    timestamp: now.toISOString(),
+    localDate: getLocalDateString(now),
+  });
 });
 
 app.listen(port, () => {
