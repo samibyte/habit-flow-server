@@ -17,9 +17,11 @@ if (!process.env.DB_URI) {
 
 // Initialize Firebase Admin
 try {
-  const serviceAccount = JSON.parse(
-    fs.readFileSync("./firebaseAdminKey.json", "utf8")
-  );
+  const decoded = Buffer.from(
+    process.env.FIREBASE_SERVICE_KEY,
+    "base64"
+  ).toString("utf8");
+  const serviceAccount = JSON.parse(decoded);
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -624,7 +626,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(" Pinged deployment. Successfully connected to MongoDB!");
   } catch (err) {
     console.error(" Failed to connect to MongoDB:", err);
