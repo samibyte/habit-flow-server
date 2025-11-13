@@ -358,7 +358,7 @@ async function run() {
           reminderTime: reminderTime || null,
           frequency: frequency || null,
           difficulty: difficulty || null,
-          goal: goal || null,
+          goal: goal.trim() || "",
           imageUrl: imageUrl || null,
           creator: {
             uid: creator.uid,
@@ -521,7 +521,7 @@ async function run() {
           updateFields.reminderTime = reminderTime;
         if (frequency !== undefined) updateFields.frequency = frequency;
         if (difficulty !== undefined) updateFields.difficulty = difficulty;
-        if (goal !== undefined) updateFields.goal = goal;
+        if (goal !== undefined) updateFields.goal = goal.trim();
         if (imageUrl !== undefined) updateFields.imageUrl = imageUrl;
         if (isPublic !== undefined) updateFields.isPublic = Boolean(isPublic);
 
