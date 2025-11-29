@@ -1,10 +1,3 @@
-## ⚠️ Note About MongoDB Data Fetching
-
-Due to assignment restrictions, the MongoDB client connects **in the background**.  
-This means the **first request may take a few seconds** to return data.
-
-✅ After that, all requests work normally.
-
 # Habit Flow Server
 
 This is the **server-side API** for the Habit Flow web application — a productivity-focused platform that allows users to **create, track, and manage daily habits**, build streaks, and monitor progress.
